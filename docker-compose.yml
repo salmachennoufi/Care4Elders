@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build: ./Care4Elders_BackEnd/api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+    networks:
+      - pi-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    volumes:
+      - ./Care4Elders_BackEnd/api-gateway:/app
+    command: ["./mvnw", "spring-boot:run"]
+
+  appointment-service:
+    build: ./Care4Elders_BackEnd/appointment-service
+    container_name: appointment-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+    networks:
+      - pi-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    volumes:
+      - ./Care4Elders_BackEnd/appointment-service:/app
+    command: ["./mvnw", "spring-boot:run"]
+
+  frontend:
+    build: ./Care4Elders_FrontEnd
+    container_name: Care4Elders_FrontEnd
+    ports:
+      - "4200:4200"
+    networks:
+      - pi-network
+    volumes:
+      - ./Care4Elders_FrontEnd:/app
+      - Care4Elders_FrontEnd-node-modules:/app/node_modules
+    command: sh -c "npm install && npm run start -- --host 0.0.0.0"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4200"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mongodb:
+    image: mongo:latest
+    container_name: pi-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    restart: always
+    networks:
+      - pi-network
+
+networks:
+  pi-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
+  Care4Elders_FrontEnd-node-modules:
